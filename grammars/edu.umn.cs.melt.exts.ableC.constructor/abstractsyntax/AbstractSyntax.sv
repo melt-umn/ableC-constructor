@@ -6,7 +6,6 @@ imports silver:langutil:pp;
 imports edu:umn:cs:melt:ableC:abstractsyntax:env;
 imports edu:umn:cs:melt:ableC:abstractsyntax:host;
 imports edu:umn:cs:melt:ableC:abstractsyntax:construction;
-imports edu:umn:cs:melt:ableC:abstractsyntax:substitution;
 
 synthesized attribute newProd::Maybe<(Expr ::= Exprs Location)> occurs on Type, ExtType;
 flowtype newProd {decorate} on Type, ExtType;
@@ -38,7 +37,6 @@ top::ExtType ::=
 abstract production newExpr
 top::Expr ::= ty::TypeName args::Exprs
 {
-  propagate substituted;
   top.pp = pp"new ${ty.pp}(${ppImplode(pp", ", args.pps)})";
   
   args.env = addEnv(ty.defs, top.env);
@@ -66,7 +64,6 @@ top::Expr ::= ty::TypeName args::Exprs
 abstract production deleteStmt
 top::Stmt ::= e::Expr
 {
-  propagate substituted;
   top.pp = pp"delete ${e.pp};";
   top.functionDefs := [];
   
