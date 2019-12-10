@@ -9,8 +9,8 @@ imports edu:umn:cs:melt:ableC:abstractsyntax:host;
 imports edu:umn:cs:melt:ableC:abstractsyntax:construction;
 imports edu:umn:cs:melt:exts:ableC:constructor:abstractsyntax;
 
-marking terminal New_t 'new' lexer classes {Keyword, ScopedReserved};
-marking terminal Delete_t 'delete' lexer classes {Keyword, ScopedReserved};
+marking terminal New_t 'new' lexer classes {Keyword, Global};
+marking terminal Delete_t 'delete' lexer classes {Keyword, Global};
 
 concrete production newExpr_c
 top::PrimaryExpr_c ::= 'new' sqs::SpecifierQualifierList_c '(' args::ArgumentExprList_c ')'
