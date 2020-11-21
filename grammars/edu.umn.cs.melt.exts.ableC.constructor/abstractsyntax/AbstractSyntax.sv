@@ -51,10 +51,10 @@ top::Expr ::= ty::TypeName args::Exprs
   
   local fwrd::Expr =
     explicitCastExpr(
-      ty,
+      decTypeName(ty),
       case ty.typerep of
       | errorType() -> errorExpr([], location=builtin)
-      | t -> t.newProd.fromJust(args, top.location)
+      | t -> t.newProd.fromJust(decExprs(args), top.location)
       end,
       location=builtin);
   
