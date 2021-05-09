@@ -21,7 +21,7 @@ top::PrimaryExpr_c ::= 'new' sqs::SpecifierQualifierList_c '(' args::ArgumentExp
   top.ast =
     newExpr(
       typeName(
-        case decorate sqs.attributes with { returnType = nothing(); } of
+        case decorate sqs.attributes with { controlStmtContext = initialControlStmtContext; } of
         | nilAttribute() -> bt
         | _ -> warnTypeExpr([wrn(top.location, "Ignoring attributes in new type expression")], bt)
         end,
@@ -39,7 +39,7 @@ top::PrimaryExpr_c ::= 'new' sqs::SpecifierQualifierList_c '(' ')'
   top.ast =
     newExpr(
       typeName(
-        case decorate sqs.attributes with { returnType = nothing(); } of
+        case decorate sqs.attributes with { controlStmtContext = initialControlStmtContext; } of
         | nilAttribute() -> bt
         | _ -> warnTypeExpr([wrn(top.location, "Ignoring attributes in new type expression")], bt)
         end,
