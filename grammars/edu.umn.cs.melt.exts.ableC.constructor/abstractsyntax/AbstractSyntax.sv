@@ -66,6 +66,7 @@ top::Stmt ::= e::Expr
 {
   top.pp = pp"delete ${e.pp};";
   top.functionDefs := [];
+  top.labelDefs := [];
   
   local localErrors::[Message] =
     e.errors ++
