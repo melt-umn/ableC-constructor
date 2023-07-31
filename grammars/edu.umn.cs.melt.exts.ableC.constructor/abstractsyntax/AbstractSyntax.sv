@@ -7,7 +7,7 @@ imports edu:umn:cs:melt:ableC:abstractsyntax:env;
 imports edu:umn:cs:melt:ableC:abstractsyntax:host;
 imports edu:umn:cs:melt:ableC:abstractsyntax:construction;
 
-synthesized attribute newProd::Maybe<(Expr ::= Exprs Location)> occurs on Type, ExtType;
+synthesized attribute newProd::Maybe<(Expr ::= Exprs)> occurs on Type, ExtType;
 flowtype newProd {decorate} on Type, ExtType;
 
 synthesized attribute deleteProd::Maybe<(Stmt ::= Expr)> occurs on Type, ExtType;
@@ -48,17 +48,16 @@ top::Expr ::= ty::TypeName args::Exprs
     case ty.typerep, ty.typerep.newProd of
     | errorType(), _ -> []
     | _, just(prod) -> []
-    | t, nothing() -> [err(top.location, s"new operator is not defined for type ${showType(t)}")]
+    | t, nothing() -> [errFromOrigin(top, s"new operator is not defined for type ${showType(t)}")]
     end;
   
   local fwrd::Expr =
     explicitCastExpr(
       decTypeName(ty),
       case ty.typerep of
-      | errorType() -> errorExpr([], location=builtin)
-      | t -> t.newProd.fromJust(decExprs(args), top.location)
-      end,
-      location=builtin);
+      | errorType() -> errorExpr([])
+      | t -> t.newProd.fromJust(decExprs(args))
+      end);
   
   forwards to mkErrorCheck(localErrors, fwrd);
 }
@@ -77,7 +76,7 @@ top::Stmt ::= e::Expr
     case e.typerep, e.typerep.deleteProd of
     | errorType(), _ -> []
     | _, just(prod) -> []
-    | t, nothing() -> [err(e.location, s"delete operator is not defined for type ${showType(t)}")]
+    | t, nothing() -> [errFromOrigin(e, s"delete operator is not defined for type ${showType(t)}")]
     end;
   
   local fwrd::Stmt =
@@ -88,5 +87,3 @@ top::Stmt ::= e::Expr
   
   forwards to if !null(localErrors) then warnStmt(localErrors) else fwrd;
 }
-
-global builtin::Location = builtinLoc("constructor");
