@@ -38,7 +38,9 @@ abstract production newExpr
 top::Expr ::= ty::TypeName args::Exprs
 {
   top.pp = pp"new ${ty.pp}(${ppImplode(pp", ", args.pps)})";
-  
+  propagate controlStmtContext;  
+
+  ty.env = top.env;
   args.env = addEnv(ty.defs, top.env);
   
   local localErrors::[Message] =
@@ -67,6 +69,8 @@ top::Stmt ::= e::Expr
   top.pp = pp"delete ${e.pp};";
   top.functionDefs := [];
   top.labelDefs := [];
+
+  propagate env, controlStmtContext;
   
   local localErrors::[Message] =
     e.errors ++
