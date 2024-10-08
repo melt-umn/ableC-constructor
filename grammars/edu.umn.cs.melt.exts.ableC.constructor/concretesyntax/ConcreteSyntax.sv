@@ -12,39 +12,15 @@ imports edu:umn:cs:melt:exts:ableC:constructor:abstractsyntax;
 marking terminal New_t 'new' lexer classes {Keyword, Global};
 marking terminal Delete_t 'delete' lexer classes {Keyword, Global};
 
-concrete production newExpr_c
-top::PrimaryExpr_c ::= 'new' sqs::SpecifierQualifierList_c '(' args::ArgumentExprList_c ')'
-{
-  sqs.givenQualifiers = sqs.typeQualifiers;
-  local bt::BaseTypeExpr =
-    figureOutTypeFromSpecifiers(sqs.typeQualifiers, sqs.preTypeSpecifiers, sqs.realTypeSpecifiers, sqs.mutateTypeSpecifiers);
-  top.ast =
-    newExpr(
-      typeName(
-        case decorate sqs.attributes with { controlStmtContext = initialControlStmtContext; } of
-        | nilAttribute() -> bt
-        | _ -> warnTypeExpr([wrnFromOrigin(top, "Ignoring attributes in new type expression")], bt)
-        end,
-        baseTypeExpr()),
-      foldExpr(args.ast));
-}
-
-concrete production newExprNoArgs_c
-top::PrimaryExpr_c ::= 'new' sqs::SpecifierQualifierList_c '(' ')'
-{
-  sqs.givenQualifiers = sqs.typeQualifiers;
-  local bt::BaseTypeExpr =
-    figureOutTypeFromSpecifiers(sqs.typeQualifiers, sqs.preTypeSpecifiers, sqs.realTypeSpecifiers, sqs.mutateTypeSpecifiers);
-  top.ast =
-    newExpr(
-      typeName(
-        case decorate sqs.attributes with { controlStmtContext = initialControlStmtContext; } of
-        | nilAttribute() -> bt
-        | _ -> warnTypeExpr([wrnFromOrigin(top, "Ignoring attributes in new type expression")], bt)
-        end,
-        baseTypeExpr()),
-      nilExpr());
-}
+concrete productions top::PrimaryExpr_c
+| 'new' id::Identifier_c '(' args::ArgumentExprList_c ')'
+  { top.ast = newExpr(id.ast, foldExpr(args.ast)); }
+| 'new' id::Identifier_c '(' ')'
+  { top.ast = newExpr(id.ast, nilExpr()); }
+| 'new' id::TypeIdName_c '(' args::ArgumentExprList_c ')'
+  { top.ast = newExpr(id.ast, foldExpr(args.ast)); }
+| 'new' id::TypeIdName_c '(' ')'
+  { top.ast = newExpr(id.ast, nilExpr()); }
 
 concrete production deleteStmt_c
 top::Stmt_c ::= 'delete' e::Expr_c ';'

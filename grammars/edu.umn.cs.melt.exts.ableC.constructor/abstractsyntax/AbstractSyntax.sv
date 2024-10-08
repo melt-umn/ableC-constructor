@@ -7,62 +7,39 @@ imports edu:umn:cs:melt:ableC:abstractsyntax:env;
 imports edu:umn:cs:melt:ableC:abstractsyntax:host;
 imports edu:umn:cs:melt:ableC:abstractsyntax:construction;
 
-synthesized attribute newProd::Maybe<(Expr ::= Exprs)> occurs on Type, ExtType;
-flowtype newProd {decorate} on Type, ExtType;
-
-synthesized attribute deleteProd::Maybe<(Stmt ::= Expr)> occurs on Type, ExtType;
-flowtype deleteProd {decorate} on Type, ExtType;
-
-aspect default production
-top::Type ::=
+production newExpr
+top::Expr ::= id::Name args::Exprs
 {
-  top.newProd = nothing();
-  top.deleteProd = nothing();
-}
+  top.pp = pp"new ${id.pp}(${ppImplode(pp", ", args.pps)})";
+  id.env = top.env;
 
-aspect production extType
-top::Type ::= q::Qualifiers  sub::ExtType
-{
-  top.newProd = sub.newProd;
-  top.deleteProd = sub.deleteProd;
-}
-
-aspect default production
-top::ExtType ::=
-{
-  top.newProd = nothing();
-  top.deleteProd = nothing();
-}
-
-abstract production newExpr
-top::Expr ::= ty::TypeName args::Exprs
-{
-  top.pp = pp"new ${ty.pp}(${ppImplode(pp", ", args.pps)})";
-  propagate controlStmtContext;  
-
-  ty.env = top.env;
-  args.env = addEnv(ty.defs, top.env);
-  
-  local localErrors::[Message] =
-    ty.errors ++ args.errors ++
-    case ty.typerep, ty.typerep.newProd of
-    | errorType(), _ -> []
-    | _, just(prod) -> []
-    | t, nothing() -> [errFromOrigin(top, s"new operator is not defined for type ${showType(t)}")]
+  local fwrdProd::Constructor =
+    case lookupConstructor(id.name, top.env) of
+    | [] -> bindConstructor(errorExpr([errFromOrigin(id, s"Undefined constructor ${id.name}")]))
+    | [c] -> c
+    | _ :: _ -> bindConstructor(errorExpr([errFromOrigin(id, s"Ambiguous constructor ${id.name}")]))
     end;
   
-  local fwrd::Expr =
-    explicitCastExpr(
-      decTypeName(ty),
-      case ty.typerep of
-      | errorType() -> errorExpr([])
-      | t -> t.newProd.fromJust(decExprs(args))
-      end);
-  
-  forwards to mkErrorCheck(localErrors, fwrd);
+  forwards to fwrdProd(@args);
 }
 
-abstract production deleteStmt
+dispatch Constructor = Expr ::= args::Exprs;
+
+production bindConstructor implements Constructor
+top::Expr ::= args::Exprs result::Expr
+{
+  forwards to letExpr(
+    consDecl(bindExprsDecls(freshName("a"), @args), nilDecl()),
+    @result);
+}
+
+production callConstructor implements Constructor
+top::Expr ::= args::Exprs fn::Expr
+{
+  forwards to callExpr(@fn, @args);
+}
+
+production deleteStmt
 top::Stmt ::= e::Expr
 {
   top.pp = pp"delete ${e.pp};";
@@ -72,18 +49,56 @@ top::Stmt ::= e::Expr
   propagate env, controlStmtContext;
   
   local localErrors::[Message] =
-    e.errors ++
     case e.typerep, e.typerep.deleteProd of
     | errorType(), _ -> []
     | _, just(prod) -> []
-    | t, nothing() -> [errFromOrigin(e, s"delete operator is not defined for type ${showType(t)}")]
+    | t, nothing() -> [errFromOrigin(e, s"delete operator is not defined for type ${show(80, t)}")]
     end;
   
-  local fwrd::Stmt =
-    case e.typerep of
-    | errorType() -> nullStmt()
-    | t -> t.deleteProd.fromJust(e)
+  local fwrdProd::Destructor =
+    case e.typerep, e.typerep.deleteProd of
+    | errorType(), _ -> bindDestructor(errorExpr([]))
+    | t, nothing() ->
+      bindDestructor(errorExpr([errFromOrigin(e, s"delete operator is not defined for type ${show(80, t)}")]))
+    | _, just(prod) -> prod
     end;
   
-  forwards to if !null(localErrors) then warnStmt(localErrors) else fwrd;
+  forwards to exprStmt(fwrdProd(@e));
+}
+
+dispatch Destructor = Expr ::= e::Expr;
+
+production bindDestructor implements Destructor
+top::Expr ::= e::Expr result::Expr
+{
+  forwards to letExpr(
+    consDecl(bindExprDecl(freshName("a"), @e), nilDecl()),
+    @result);
+}
+
+production callDestructor implements Destructor
+top::Expr ::= e::Expr fn::Expr
+{
+  forwards to callExpr(@fn, consExpr(@e, nilExpr()));
+}
+
+synthesized attribute deleteProd::Maybe<Destructor> occurs on Type, ExtType;
+flowtype deleteProd {decorate} on Type, ExtType;
+
+aspect default production
+top::Type ::=
+{
+  top.deleteProd = nothing();
+}
+
+aspect production extType
+top::Type ::= q::Qualifiers  sub::ExtType
+{
+  top.deleteProd = sub.deleteProd;
+}
+
+aspect default production
+top::ExtType ::=
+{
+  top.deleteProd = nothing();
 }
