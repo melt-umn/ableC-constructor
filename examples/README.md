@@ -1,0 +1,1 @@
+This extension does not have any examples as it is not intended to be used directly; it simply defines constructs that can be overloaded by other extensions.
