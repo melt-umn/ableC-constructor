@@ -17,17 +17,16 @@ top::PrimaryExpr_c ::= 'new' sqs::SpecifierQualifierList_c '(' args::ArgumentExp
 {
   sqs.givenQualifiers = sqs.typeQualifiers;
   local bt::BaseTypeExpr =
-    figureOutTypeFromSpecifiers(sqs.location, sqs.typeQualifiers, sqs.preTypeSpecifiers, sqs.realTypeSpecifiers, sqs.mutateTypeSpecifiers);
+    figureOutTypeFromSpecifiers(sqs.typeQualifiers, sqs.preTypeSpecifiers, sqs.realTypeSpecifiers, sqs.mutateTypeSpecifiers);
   top.ast =
     newExpr(
       typeName(
         case decorate sqs.attributes with { controlStmtContext = initialControlStmtContext; } of
         | nilAttribute() -> bt
-        | _ -> warnTypeExpr([wrn(top.location, "Ignoring attributes in new type expression")], bt)
+        | _ -> warnTypeExpr([wrnFromOrigin(top, "Ignoring attributes in new type expression")], bt)
         end,
         baseTypeExpr()),
-      foldExpr(args.ast),
-      location=top.location);
+      foldExpr(args.ast));
 }
 
 concrete production newExprNoArgs_c
@@ -35,17 +34,16 @@ top::PrimaryExpr_c ::= 'new' sqs::SpecifierQualifierList_c '(' ')'
 {
   sqs.givenQualifiers = sqs.typeQualifiers;
   local bt::BaseTypeExpr =
-    figureOutTypeFromSpecifiers(sqs.location, sqs.typeQualifiers, sqs.preTypeSpecifiers, sqs.realTypeSpecifiers, sqs.mutateTypeSpecifiers);
+    figureOutTypeFromSpecifiers(sqs.typeQualifiers, sqs.preTypeSpecifiers, sqs.realTypeSpecifiers, sqs.mutateTypeSpecifiers);
   top.ast =
     newExpr(
       typeName(
         case decorate sqs.attributes with { controlStmtContext = initialControlStmtContext; } of
         | nilAttribute() -> bt
-        | _ -> warnTypeExpr([wrn(top.location, "Ignoring attributes in new type expression")], bt)
+        | _ -> warnTypeExpr([wrnFromOrigin(top, "Ignoring attributes in new type expression")], bt)
         end,
         baseTypeExpr()),
-      nilExpr(),
-      location=top.location);
+      nilExpr());
 }
 
 concrete production deleteStmt_c
